@@ -1,12 +1,15 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { WebhookController } from './webhook.controller';
-import { WebhookService } from './webhook.service';
 import { CreateWebhookDto } from './dto/create-webhook.dto';
 import { Webhook } from './entities/webhook.entity';
+import {
+  type IWebhookService,
+  IWEBHOOK_SERVICE,
+} from './interfaces/webhook-service.interface';
 
 describe('WebhookController', () => {
   let controller: WebhookController;
-  let service: jest.Mocked<WebhookService>;
+  let service: jest.Mocked<IWebhookService>;
 
   const mockWebhook: Webhook = {
     id: '123e4567-e89b-12d3-a456-426614174000',
@@ -27,14 +30,14 @@ describe('WebhookController', () => {
       controllers: [WebhookController],
       providers: [
         {
-          provide: WebhookService,
+          provide: IWEBHOOK_SERVICE,
           useValue: mockWebhookService,
         },
       ],
     }).compile();
 
     controller = module.get<WebhookController>(WebhookController);
-    service = module.get(WebhookService);
+    service = module.get(IWEBHOOK_SERVICE);
 
     jest.clearAllMocks();
   });

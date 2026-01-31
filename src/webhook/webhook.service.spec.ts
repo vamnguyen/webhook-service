@@ -5,10 +5,12 @@ import { NotFoundException } from '@nestjs/common';
 import { WebhookService } from './webhook.service';
 import { Webhook } from './entities/webhook.entity';
 import { CreateWebhookDto } from './dto/create-webhook.dto';
+import { WebhookStrategyFactory } from './strategies/webhook-strategy.factory';
 
 describe('WebhookService', () => {
   let service: WebhookService;
   let repository: jest.Mocked<Repository<Webhook>>;
+  let strategyFactory: jest.Mocked<WebhookStrategyFactory>;
 
   const mockWebhook: Webhook = {
     id: '123e4567-e89b-12d3-a456-426614174000',
@@ -25,6 +27,14 @@ describe('WebhookService', () => {
     findOne: jest.fn(),
   };
 
+  const mockStrategy = {
+    handle: jest.fn(),
+  };
+
+  const mockStrategyFactory = {
+    getStrategy: jest.fn().mockReturnValue(mockStrategy),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -33,14 +43,20 @@ describe('WebhookService', () => {
           provide: getRepositoryToken(Webhook),
           useValue: mockRepository,
         },
+        {
+          provide: WebhookStrategyFactory,
+          useValue: mockStrategyFactory,
+        },
       ],
     }).compile();
 
     service = module.get<WebhookService>(WebhookService);
     repository = module.get(getRepositoryToken(Webhook));
+    strategyFactory = module.get(WebhookStrategyFactory);
 
     // Reset mocks before each test
     jest.clearAllMocks();
+    mockStrategyFactory.getStrategy.mockReturnValue(mockStrategy);
   });
 
   it('should be defined', () => {
@@ -48,7 +64,7 @@ describe('WebhookService', () => {
   });
 
   describe('create', () => {
-    it('should create and save a webhook', async () => {
+    it('should create, save a webhook and execute strategy', async () => {
       const createDto: CreateWebhookDto = {
         source: 'stripe',
         event: 'payment.completed',
@@ -62,6 +78,10 @@ describe('WebhookService', () => {
 
       expect(repository.create).toHaveBeenCalledWith(createDto);
       expect(repository.save).toHaveBeenCalledWith(mockWebhook);
+      expect(strategyFactory.getStrategy).toHaveBeenCalledWith(
+        mockWebhook.event,
+      );
+      expect(mockStrategy.handle).toHaveBeenCalledWith(mockWebhook);
       expect(result).toEqual(mockWebhook);
     });
   });

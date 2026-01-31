@@ -7,14 +7,21 @@ import {
   ParseUUIDPipe,
   HttpCode,
   HttpStatus,
+  Inject,
 } from '@nestjs/common';
-import { WebhookService } from './webhook.service';
 import { CreateWebhookDto } from './dto/create-webhook.dto';
 import { Webhook } from './entities/webhook.entity';
+import {
+  type IWebhookService,
+  IWEBHOOK_SERVICE,
+} from './interfaces/webhook-service.interface';
 
 @Controller('webhooks')
 export class WebhookController {
-  constructor(private readonly webhookService: WebhookService) {}
+  constructor(
+    @Inject(IWEBHOOK_SERVICE)
+    private readonly webhookService: IWebhookService,
+  ) {}
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
